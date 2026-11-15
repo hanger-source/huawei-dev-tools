@@ -1,0 +1,34 @@
+{
+  "name": "@local/huawei-docs",
+  "version": "0.5.0",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "type": "module",
+  "bin": {
+    "huawei-docs": "dist/cli.js",
+    "huawei-dev": "dist/dev-cli.js"
+  },
+  "exports": {
+    "./dev-device": "./dist/dev-device.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "install-local": "pnpm build && node scripts/install-local.mjs",
+    "sync:skills": "node scripts/sync-deveco-skills.mjs"
+  },
+  "dependencies": {
+    "@deveco/deveco-cli-common": "1.3.12",
+    "@deveco-codegenie/mcp-bridge": "1.1.11",
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

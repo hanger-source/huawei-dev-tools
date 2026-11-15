@@ -1,0 +1,4 @@
+interface:
+  display_name: "Huawei Docs"
+  short_description: "浏览、搜索并核验 HarmonyOS 官方开发文档体系"
+  default_prompt: "使用 $huawei-docs 浏览 HarmonyOS 官方文档体系并核验这个 API。"

@@ -1,0 +1,39 @@
+{
+  "package": "@deveco/deveco-cli-common",
+  "version": "1.3.12",
+  "registry": "https://registry.npmjs.org/@deveco/deveco-cli-common/1.3.12",
+  "sourceTag": "latest/v1.3.12",
+  "sourceCommit": "48dd33612c53bfd18541f09b9491389f017f3cba",
+  "skills": [
+    {
+      "name": "deveco-cli",
+      "source": "@deveco/deveco-cli-common@1.3.12",
+      "upstreamSkillSha256": "3a19b2d577f48de875539354f08b276690b12dfdb125b75869230efb7c0caa65"
+    },
+    {
+      "name": "hmos-arkui-develop-skill",
+      "source": "@deveco/deveco-cli-common@1.3.12",
+      "upstreamSkillSha256": "1b2b281319c6bb9a175e4ec2d9d2d1b05db3ec3e94f761fe88f15d8722f6492c"
+    },
+    {
+      "name": "hmos-dfx-analyzer",
+      "source": "@deveco/deveco-cli-common@1.3.12",
+      "upstreamSkillSha256": "7dfa5265e87a93f06443569f2001cca9b3dab93a98cbf4310d84607009fea40b"
+    },
+    {
+      "name": "hmos-design-to-arkts",
+      "source": "@deveco/deveco-cli-common@1.3.12",
+      "upstreamSkillSha256": "b8c78bc2aef6dfd25d6f8606acecf0839588170af6201cb8755fa19b29dc8465"
+    },
+    {
+      "name": "hmos-runtime-fix-skill",
+      "source": "DevEco Code v0.2.5",
+      "upstreamSkillSha256": "c9f04ca59795e66e1dd1710bd8bb1581944eb05991c189e958c0f261e8e452b6"
+    }
+  ],
+  "code": {
+    "repository": "https://gitcode.com/openharmony-sig/deveco-code.git",
+    "tag": "v0.2.5",
+    "commit": "b56e1b8d69dcc300b55fdb06d1470351fb75cdd8"
+  }
+}

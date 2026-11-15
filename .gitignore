@@ -1,0 +1,25 @@
+.DS_Store
+__MACOSX/
+__pycache__/
+*.py[cod]
+node_modules/
+.trash/
+.tmp/
+.hvigor/
+
+# 官方发行物按 official/README.md 单独获取。
+/official/*
+!/official/README.md
+
+# CLI 构建产物、内部响应和生成的阅读库。
+/tools/huawei-cli/dist/
+/tools/huawei-cli/data/
+/tools/huawei-cli/docs/
+
+# 本地认证与签名材料。
+.env
+.env.*
+!.env.example
+*.p12
+*.p7b
+*.key
