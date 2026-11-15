@@ -2,6 +2,10 @@
 
 已有项目维护的两套独立入口：`bin/huawei-docs` 查询可溯源官方文档；`bin/huawei-dev` 调用设备和 DevEco Code 提取能力。入口自动定位项目附带 Node，无需全局安装。
 
+从仓库根目录执行 `./scripts/install-local.sh`，即可将两个项目 CLI、官方 `devecocli` 和 `hdc`、`hvigorw`、`ohpm`、`codelinter`、`hstack` 批量安装到 `~/.local/bin`。以后在任意目录使用这些短命令；`huawei-tools-install` 重新编译和安装整套工具。命名冲突会在写入前报错，无变化的重复安装不会重建 skill。
+
+skill 仅部署到 `~/.agents/skills`，由 Codex 和 dsh 共享。这七个 skill 的宿主专用副本移到项目 `.trash`；项目源码和其他 skill 不受影响。`HUAWEI_TOOLS_BIN_DIR`、`HUAWEI_SKILLS_DIR` 可显式指定部署位置。
+
 ## 官方 DevEco CLI
 
 `bin/devecocli` 直接运行官方 `@deveco/deveco-cli-common@1.3.12`，是新工程开发流程的主入口。启动器使用随附 Node，未显式配置时选择项目内 CLT；用户指定的 `DEVECO_HOME` / `DEVECO_CLI_CLT_PATH` 保持有效。
@@ -79,4 +83,4 @@
 
 ## 维护
 
-`package.json` 中 `build` 为 TypeScript 编译，`check` 为静态检查，`test` 为现有 Vitest。使用项目官方 Node 执行这些工具。修改 skill 源码后运行 `scripts/install-local.mjs`，更新项目入口和 Codex 的物理部署副本。不要直接修改部署副本。
+`package.json` 中 `build` 为 TypeScript 编译，`check` 为静态检查，`test` 为现有 Vitest。使用项目官方 Node 执行这些工具。修改 skill 源码后运行 `huawei-tools-install`，更新命令和 `~/.agents/skills` 的共享部署。不要直接修改部署副本。

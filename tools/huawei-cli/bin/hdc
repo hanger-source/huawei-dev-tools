@@ -1,0 +1,5 @@
+#!/bin/sh
+# Managed by huawei-dev-tools
+set -eu
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+exec "$SCRIPT_DIR/../../../official/command-line-tools/sdk/default/openharmony/toolchains/hdc" "$@"

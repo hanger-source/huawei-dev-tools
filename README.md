@@ -10,19 +10,34 @@ HarmonyOS 官方工具链、独立 CLI 和 Codex skills 的统一目录。所有
 | `tools/scrcpy-client/` | scrcpy 宿主端构建入口 |
 | `skills/` | 项目维护的两个 skill，以及五个从官方包/源码同步并接入 Codex 的 skill |
 
+## 统一安装
+
+在本目录运行一次：
+
+```bash
+./scripts/install-local.sh
+```
+
+安装器编译 CLI，将 `huawei-docs`、`huawei-dev`、`devecocli`、`hdc`、`hvigorw`、`ohpm`、`codelinter`、`hstack` 和 `huawei-tools-install` 的物理启动脚本安装到 `~/.local/bin`。该目录需要在 PATH 中；本机已配置。脚本定位本项目的官方工具和 Node，不复制 SDK，也不创建符号链接。
+
+七个 skill 仅部署到 `~/.agents/skills`，由 Codex 和 dsh 共享；项目 `skills/` 是源码。安装器把这七个 skill 在 `.codex/skills`、`.dsh/skills` 中的重复部署移到项目 `.trash`，不处理其他 skill。无变化的重复安装直接复用共享副本；同名的非本项目命令会使安装在写入前停止。
+
+后续在任意目录执行 `huawei-tools-install` 即可重新编译和安装。项目迁移后，从新目录重新运行 `./scripts/install-local.sh`。
+
 ## 直接使用
 
 在本目录执行；目录可位于任意磁盘，启动脚本使用随附 Node：
 
 ```bash
-./tools/huawei-cli/bin/huawei-docs doctor
-./tools/huawei-cli/bin/huawei-docs search '屏幕录制' --limit 5
-./tools/huawei-cli/bin/huawei-docs --json symbol OH_Input_RequestInjection --version 7.0 --device Phone
-./tools/huawei-cli/bin/huawei-dev doctor
-./tools/huawei-cli/bin/huawei-dev devices
-./tools/huawei-cli/bin/huawei-dev device info --device <target>
-./tools/huawei-cli/bin/devecocli --version
-./tools/huawei-cli/bin/devecocli docs search 屏幕录制 --format json --limit 5
+huawei-docs doctor
+huawei-docs search '屏幕录制' --limit 5
+huawei-docs --json symbol OH_Input_RequestInjection --version 7.0 --device Phone
+huawei-dev doctor
+huawei-dev devices
+huawei-dev device info --device <target>
+devecocli --version
+devecocli docs search 屏幕录制 --format json --limit 5
+hdc list targets
 ```
 
 `huawei-docs` 使用官方文档中心目录、搜索、详情与 Markdown。默认研究 API 26.0.0，支持 `7.0` 系统名、精确 API 和 6.x 画像；设备支持与权限必须看具体段落。`doctor` 默认实时联网，`doctor --cached` 明确只验证本地快照。查最新时用全局 `--refresh`，普通查询复用已有缓存。
@@ -45,7 +60,7 @@ HarmonyOS 官方工具链、独立 CLI 和 Codex skills 的统一目录。所有
 
 同步上游 skill 需要 `~/third-party/deveco-code` 的 v0.2.5 checkout（可用 `DEVECO_CODE_SOURCE` 显式指定）；普通安装部署直接使用项目已有 skill，不需要该源码库。
 
-安装器更新项目内 CLI 入口，并将 skills 物理部署到 `~/.codex/skills`；每个 skill 自带定位当前工具路径的启动脚本，旧部署移入 `.trash`。迁移项目目录后重新执行安装器。
+安装器同时更新项目内入口、`~/.local/bin` 命令和 `~/.agents/skills` 共享副本；每个 skill 自带定位工具路径的启动脚本，不依赖宿主专用安装目录。可用 `HUAWEI_TOOLS_BIN_DIR`、`HUAWEI_SKILLS_DIR` 显式选择目标目录；默认安装使用上述共享位置。
 
 `huawei-dev upstream` 只读检查官方 CLI 与 Coding Agent 的 `latest`、`stable` 等发行通道。升级时显式固定 npm 依赖版本、检查 skill 接入约束，再同步和部署；不对所有 Agent 执行全局初始化。官方 CLI 的 macOS/Linux 实现包为 `@deveco/deveco-cli-common`，项目直接依赖该实现，避免跨平台外壳的可选依赖安装缺口。
 

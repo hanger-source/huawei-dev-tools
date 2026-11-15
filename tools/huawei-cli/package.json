@@ -5,8 +5,15 @@
   "packageManager": "pnpm@11.24.0",
   "type": "module",
   "bin": {
-    "huawei-docs": "dist/cli.js",
-    "huawei-dev": "dist/dev-cli.js"
+    "huawei-docs": "bin/huawei-docs",
+    "huawei-dev": "bin/huawei-dev",
+    "devecocli": "bin/devecocli",
+    "hdc": "bin/hdc",
+    "hvigorw": "bin/hvigorw",
+    "ohpm": "bin/ohpm",
+    "codelinter": "bin/codelinter",
+    "hstack": "bin/hstack",
+    "huawei-tools-install": "bin/huawei-tools-install"
   },
   "exports": {
     "./dev-device": "./dist/dev-device.js"
@@ -15,7 +22,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "install-local": "pnpm build && node scripts/install-local.mjs",
+    "install-local": "../../scripts/install-local.sh",
     "sync:skills": "node scripts/sync-deveco-skills.mjs"
   },
   "dependencies": {

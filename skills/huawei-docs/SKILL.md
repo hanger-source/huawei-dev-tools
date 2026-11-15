@@ -12,7 +12,7 @@ HUAWEI_DOCS="$SKILL_DIR/scripts/huawei-docs"
 "$HUAWEI_DOCS" --help
 ```
 
-源码在 huawei-dev-tools 的 `tools/huawei-cli`，skill 源码在该项目的 `skills/huawei-docs`；Codex 中的副本由 `install-local.mjs` 物理部署，启动脚本指向同一套工具。不要重新创建查询 CLI 或全局入口。
+日常也可直接运行 PATH 中的 `huawei-docs`。源码在 huawei-dev-tools 的 `tools/huawei-cli`，skill 源码在该项目的 `skills/huawei-docs`；运行 `huawei-tools-install` 部署到 `~/.agents/skills`，供 Codex 与 dsh 共享，启动脚本指向同一套工具。不要重新创建查询 CLI 或额外安装副本。
 
 ## 按问题选择入口
 

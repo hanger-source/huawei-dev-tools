@@ -14,7 +14,7 @@ HUAWEI_DEV="$SKILL_DIR/scripts/huawei-dev"
 "$HUAWEI_DEV" --json doctor
 ```
 
-源码位于 huawei-dev-tools 的 `tools/huawei-cli`，skill 唯一源码为该项目的 `skills/huawei-devtools`。Codex 中的 skill 和启动脚本由 `install-local.mjs` 物理部署，不依赖 `~/projects` 固定路径或全局 Node。
+日常也可直接运行 PATH 中的 `huawei-dev`。源码位于 huawei-dev-tools 的 `tools/huawei-cli`，skill 唯一源码为该项目的 `skills/huawei-devtools`。`huawei-tools-install` 统一部署到 `~/.agents/skills`，供 Codex 与 dsh 共享，不依赖 `~/projects` 固定路径或全局 Node。
 
 ## 工具边界
 

@@ -1,85 +1,120 @@
 #!/usr/bin/env node
-
-import { access, chmod, cp, lstat, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { access, chmod, cp, lstat, mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
-  process.stdout.write("用法：node scripts/install-local.mjs\n更新项目 CLI 启动脚本并部署 Codex skills。\n可用 HUAWEI_DOCS_BIN_DIR 和 HUAWEI_CODEX_SKILLS_DIR 显式指定目标目录。\n");
+  process.stdout.write("用法：./scripts/install-local.sh 或 huawei-tools-install\n批量安装 CLI 与 SDK 命令到 ~/.local/bin，skills 统一安装到 ~/.agents/skills。\n可用 HUAWEI_TOOLS_BIN_DIR、HUAWEI_SKILLS_DIR 指定安装目录。\n同名非本项目命令会阻止安装；旧宿主副本移入项目 .trash。\n");
   process.exit(0);
 }
 if (process.argv.length > 2) throw new Error(`未知参数：${process.argv.slice(2).join(" ")}`);
-
-const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const workspaceRoot = resolve(projectRoot, "../..");
-const nodeExecutable = join(workspaceRoot, "official", "command-line-tools", "tool", "node", "bin", "node");
-const projectBinDirectory = fileURLToPath(new URL("../bin/", import.meta.url));
-const binDirectory = process.env.HUAWEI_DOCS_BIN_DIR || projectBinDirectory;
+const toolRoot = fileURLToPath(new URL("../", import.meta.url));
+const root = resolve(toolRoot, "../..");
+const clt = join(root, "official", "command-line-tools");
+const node = join(clt, "tool", "node", "bin", "node");
+const projectBin = join(toolRoot, "bin");
+const userBin = resolve(process.env.HUAWEI_TOOLS_BIN_DIR || join(homedir(), ".local", "bin"));
+const skillsDirectory = resolve(process.env.HUAWEI_SKILLS_DIR || join(homedir(), ".agents", "skills"));
+const marker = "# Managed by huawei-dev-tools";
 const commands = [
-  { name: "huawei-docs", entry: fileURLToPath(new URL("../dist/cli.js", import.meta.url)) },
-  { name: "huawei-dev", entry: fileURLToPath(new URL("../dist/dev-cli.js", import.meta.url)) },
-  { name: "devecocli", entry: fileURLToPath(new URL("../node_modules/@deveco/deveco-cli-common/dist/cli.js", import.meta.url)) }
+  { name: "huawei-docs", entry: join(toolRoot, "dist", "cli.js"), node: true },
+  { name: "huawei-dev", entry: join(toolRoot, "dist", "dev-cli.js"), node: true },
+  { name: "devecocli", entry: join(toolRoot, "node_modules", "@deveco", "deveco-cli-common", "dist", "cli.js"), node: true },
+  { name: "hdc", entry: join(clt, "sdk", "default", "openharmony", "toolchains", "hdc") },
+  ...["hvigorw", "ohpm", "codelinter", "hstack"].map(name => ({ name, entry: join(clt, "bin", name) })),
+  { name: "huawei-tools-install", entry: join(root, "scripts", "install-local.sh") }
 ];
-
-function wrapper(directory, command) {
-  const relativeNode = relative(directory, nodeExecutable);
-  const clt = relative(directory, join(workspaceRoot, "official", "command-line-tools"));
-  const environment = command.name === "devecocli"
-    ? `export PATH="$SCRIPT_DIR/${dirname(relativeNode)}:$PATH"\nif [ -z "\${DEVECO_HOME:-}" ] && [ -z "\${DEVECO_CLI_CLT_PATH:-}" ]; then\n  DEVECO_CLI_CLT_PATH=$(CDPATH='' cd -- "$SCRIPT_DIR/${clt}" && pwd)\n  export DEVECO_CLI_CLT_PATH\nfi\n`
-    : "";
-  return `#!/bin/sh\nset -eu\nSCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)\n${environment}exec "$SCRIPT_DIR/${relativeNode}" "$SCRIPT_DIR/${relative(directory, command.entry)}" "$@"\n`;
-}
-
-for (const command of commands) {
-  const target = join(binDirectory, command.name);
-  await access(command.entry);
-  await access(nodeExecutable);
-  await mkdir(dirname(target), { recursive: true });
-  await writeFile(target, wrapper(dirname(target), command), { mode: 0o755 });
-  await chmod(target, 0o755);
-  process.stdout.write(`${command.name} 已安装为物理启动脚本：${target}\n`);
-}
-
-const skillsDirectory = process.env.HUAWEI_CODEX_SKILLS_DIR || join(homedir(), ".codex", "skills");
 const skills = ["huawei-docs", "huawei-devtools", "deveco-cli", "hmos-arkui-develop-skill", "hmos-dfx-analyzer", "hmos-design-to-arkts", "hmos-runtime-fix-skill"];
-await mkdir(skillsDirectory, { recursive: true });
-
-async function pathExists(path) {
-  try {
-    await lstat(path);
-    return true;
-  } catch (error) {
-    const code = error instanceof Error && "code" in error ? error.code : undefined;
-    if (code === "ENOENT") return false;
-    throw error;
+const backupRoot = join(root, ".trash", "local-install", `${new Date().toISOString().replaceAll(":", "-")}-${process.pid}`);
+async function exists(path) {
+  try { await lstat(path); return true; }
+  catch (error) { if (error.code === "ENOENT") return false; throw error; }
+}
+function wrapper(directory, command) {
+  const executable = command.node ? `"$SCRIPT_DIR/${relative(directory, node)}" ` : "";
+  const environment = command.name === "devecocli"
+    ? `export PATH="$SCRIPT_DIR/${relative(directory, dirname(node))}:$PATH"\nif [ -z "\${DEVECO_HOME:-}" ] && [ -z "\${DEVECO_CLI_CLT_PATH:-}" ]; then\n  DEVECO_CLI_CLT_PATH=$(CDPATH='' cd -- "$SCRIPT_DIR/${relative(directory, clt)}" && pwd)\n  export DEVECO_CLI_CLT_PATH\nfi\n` : "";
+  return `#!/bin/sh\n${marker}\nset -eu\nSCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)\n${environment}exec ${executable}"$SCRIPT_DIR/${relative(directory, command.entry)}" "$@"\n`;
+}
+async function installCommand(target, command) {
+  const content = wrapper(dirname(target), command);
+  if (await exists(target) && await readFile(target, "utf8") === content) {
+    await chmod(target, 0o755);
+    return;
+  }
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, content, { mode: 0o755 });
+  await chmod(target, 0o755);
+}
+async function archive(path, group, name) {
+  const target = join(backupRoot, group, name);
+  await mkdir(dirname(target), { recursive: true });
+  await rename(path, target);
+  process.stdout.write(`已备份：${path} → ${target}\n`);
+}
+const ignored = new Set([".DS_Store", "__pycache__"]);
+async function files(directory, prefix = "") {
+  const result = [];
+  for (const entry of await readdir(join(directory, prefix), { withFileTypes: true })) {
+    if (ignored.has(entry.name)) continue;
+    const path = join(prefix, entry.name);
+    if (entry.isDirectory()) result.push(...await files(directory, path));
+    else if (entry.isFile()) result.push(path);
+    else throw new Error(`skill 中不支持符号链接或特殊文件：${join(directory, path)}`);
+  }
+  return result.sort();
+}
+async function skillUnchanged(source, target, command) {
+  if (!await exists(target) || (await lstat(target)).isSymbolicLink()) return false;
+  const expectedFiles = await files(source);
+  if (JSON.stringify(expectedFiles) !== JSON.stringify(await files(target))) return false;
+  for (const path of expectedFiles) {
+    const expected = path === join("scripts", command.name) ? Buffer.from(wrapper(join(target, "scripts"), command)) : await readFile(join(source, path));
+    if (!expected.equals(await readFile(join(target, path)))) return false;
+  }
+  return true;
+}
+// 写入前检查全部依赖和命名冲突。
+await access(node);
+if (skillsDirectory === join(root, "skills")) throw new Error("安装目录不能是项目 skill 源码目录");
+for (const command of commands) {
+  await access(command.entry);
+  const target = join(userBin, command.name);
+  if (userBin !== projectBin && await exists(target)) {
+    const info = await lstat(target);
+    if (!info.isFile() || !(await readFile(target, "utf8")).startsWith(`#!/bin/sh\n${marker}\n`)) {
+      throw new Error(`同名命令不是本项目管理的入口，请先处理冲突：${target}`);
+    }
   }
 }
-
+for (const name of skills) await access(join(root, "skills", name, "SKILL.md"));
+for (const directory of new Set([projectBin, userBin])) {
+  for (const command of commands) await installCommand(join(directory, command.name), command);
+  process.stdout.write(`已安装 ${commands.length} 个命令：${directory}\n`);
+}
+await mkdir(skillsDirectory, { recursive: true });
 for (const name of skills) {
-  const source = join(workspaceRoot, "skills", name);
+  const source = join(root, "skills", name);
   const target = join(skillsDirectory, name);
-  await access(join(source, "SKILL.md"));
-
-  if (await pathExists(target)) {
-    const trashDirectory = join(skillsDirectory, ".trash", new Date().toISOString().replaceAll(":", "-"));
-    await mkdir(trashDirectory, { recursive: true });
-    await rename(target, join(trashDirectory, name));
-  }
-
-  await cp(source, target, { recursive: true, errorOnExist: true });
   const commandName = name === "huawei-docs" ? "huawei-docs" : name === "huawei-devtools" ? "huawei-dev" : "devecocli";
   const command = commands.find(command => command.name === commandName);
-  const launcher = join(target, "scripts", command.name);
-  const launcherDirectory = dirname(launcher);
-  await mkdir(launcherDirectory, { recursive: true });
-  await writeFile(launcher, wrapper(launcherDirectory, command), { mode: 0o755 });
-  await chmod(launcher, 0o755);
-  await readFile(join(target, "SKILL.md"), "utf8");
-  process.stdout.write(`${name} skill 已物理部署：${target}\n`);
+  if (await skillUnchanged(source, target, command)) {
+    await chmod(join(target, "scripts", command.name), 0o755);
+    process.stdout.write(`skill 未变化：${name}\n`);
+    continue;
+  }
+  if (await exists(target)) await archive(target, "shared", name);
+  await cp(source, target, { recursive: true, errorOnExist: true, filter: path => !ignored.has(path.split(/[\\/]/).at(-1)) });
+  await installCommand(join(target, "scripts", command.name), command);
+  process.stdout.write(`已部署共享 skill：${name}\n`);
 }
-
-const pathEntries = (process.env.PATH || "").split(":");
-if (!pathEntries.includes(binDirectory)) {
-  process.stderr.write(`提示：项目内直接运行 ${join(binDirectory, "huawei-docs")} 或 ${join(binDirectory, "huawei-dev")}，也可把 ${binDirectory} 加入当前 shell 的 PATH。\n`);
+// 只归并本项目的七个 skill，其他宿主配置和其余 skill 保持原样。
+for (const host of [".codex", ".dsh"]) {
+  for (const name of skills) {
+    const duplicate = join(homedir(), host, "skills", name);
+    if (duplicate !== join(skillsDirectory, name) && await exists(duplicate)) await archive(duplicate, host.slice(1), name);
+  }
 }
+process.stdout.write(`共享 skills：${skillsDirectory}\n命令：${commands.map(command => command.name).join(", ")}\n`);
+if (!(process.env.PATH || "").split(":").includes(userBin)) process.stderr.write(`请把 ${userBin} 加入 PATH。\n`);
