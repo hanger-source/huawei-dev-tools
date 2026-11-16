@@ -23,3 +23,9 @@ node_modules/
 *.p12
 *.p7b
 *.key
+*.pfx
+*.pem
+*.cer
+*.csr
+*.jks
+*.keystore

@@ -1,6 +1,8 @@
 # Huawei Dev Tools
 
-HarmonyOS 官方工具链、独立 CLI 和 Codex skills 的统一目录。所有入口使用物理文件，不创建符号链接。
+面向 AI Agent 的 HarmonyOS 开发工具集，整合华为官方工具链、独立 CLI 和共享 skills。适用于 Codex、dsh 等支持本地命令与 skill 的宿主。所有入口使用物理文件，不创建符号链接。
+
+本项目是社区整合，不是华为官方发布。上游 skill、模板和脚本保留各自的来源及许可声明。
 
 | 目录 | 内容 |
 |---|---|
@@ -12,13 +14,23 @@ HarmonyOS 官方工具链、独立 CLI 和 Codex skills 的统一目录。所有
 
 ## 统一安装
 
-在本目录运行一次：
+以下流程以 macOS ARM64 为目标。需要华为 Command Line Tools、Node.js 22 或以上，以及 `tools/huawei-cli/package.json` 固定的 pnpm 11.24.0。
 
 ```bash
-./scripts/install-local.sh
+git clone https://github.com/hanger-source/huawei-dev-tools.git
+cd huawei-dev-tools
 ```
 
-安装器编译 CLI，将 `huawei-docs`、`huawei-dev`、`devecocli`、`hdc`、`hvigorw`、`ohpm`、`codelinter`、`hstack` 和 `huawei-tools-install` 的物理启动脚本安装到 `~/.local/bin`。该目录需要在 PATH 中；本机已配置。脚本定位本项目的官方工具和 Node，不复制 SDK，也不创建符号链接。
+先按 [官方发行物](official/README.md) 下载并放置 Command Line Tools。SDK、Studio 安装介质和 Node 不随 Git 仓库分发。然后在仓库根目录安装依赖和命令：
+
+```bash
+export PATH="$PWD/official/command-line-tools/tool/node/bin:$PATH"
+pnpm --dir tools/huawei-cli install --frozen-lockfile
+./scripts/install-local.sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+安装器编译 CLI，将 `huawei-docs`、`huawei-dev`、`devecocli`、`hdc`、`hvigorw`、`ohpm`、`codelinter`、`hstack` 和 `huawei-tools-install` 的物理启动脚本安装到 `~/.local/bin`。请将该目录加入 shell 的 PATH。脚本定位本项目的官方工具和 Node，不复制 SDK，也不创建符号链接。
 
 七个 skill 仅部署到 `~/.agents/skills`，由 Codex 和 dsh 共享；项目 `skills/` 是源码。安装器把这七个 skill 在 `.codex/skills`、`.dsh/skills` 中的重复部署移到项目 `.trash`，不处理其他 skill。无变化的重复安装直接复用共享副本；同名的非本项目命令会使安装在写入前停止。
 
@@ -26,7 +38,7 @@ HarmonyOS 官方工具链、独立 CLI 和 Codex skills 的统一目录。所有
 
 ## 直接使用
 
-在本目录执行；目录可位于任意磁盘，启动脚本使用随附 Node：
+安装后可在任意目录执行，启动脚本使用项目内官方 Command Line Tools 提供的 Node：
 
 ```bash
 huawei-docs doctor
@@ -53,9 +65,11 @@ hdc list targets
 修改 `tools/huawei-cli/src` 与 `skills/` 源码后，从本目录执行：
 
 ```bash
-./official/command-line-tools/tool/node/bin/node tools/huawei-cli/node_modules/typescript/bin/tsc -p tools/huawei-cli/tsconfig.json
-./official/command-line-tools/tool/node/bin/node tools/huawei-cli/scripts/sync-deveco-skills.mjs
-./official/command-line-tools/tool/node/bin/node tools/huawei-cli/scripts/install-local.mjs
+pnpm --dir tools/huawei-cli check
+pnpm --dir tools/huawei-cli test
+pnpm --dir tools/huawei-cli build
+node tools/huawei-cli/scripts/sync-deveco-skills.mjs
+node tools/huawei-cli/scripts/install-local.mjs
 ```
 
 同步上游 skill 需要 `~/third-party/deveco-code` 的 v0.2.5 checkout（可用 `DEVECO_CODE_SOURCE` 显式指定）；普通安装部署直接使用项目已有 skill，不需要该源码库。
@@ -64,10 +78,16 @@ hdc list targets
 
 `huawei-dev upstream` 只读检查官方 CLI 与 Coding Agent 的 `latest`、`stable` 等发行通道。升级时显式固定 npm 依赖版本、检查 skill 接入约束，再同步和部署；不对所有 Agent 执行全局初始化。官方 CLI 的 macOS/Linux 实现包为 `@deveco/deveco-cli-common`，项目直接依赖该实现，避免跨平台外壳的可选依赖安装缺口。
 
-详细命令见 [CLI 使用说明](tools/huawei-cli/README.md)，官方版本及重新下载见 [官方发行物](official/README.md)。本地官方 SDK 为 26.0.0 Beta2 / 26.0.0.32，HDC 为 3.2.0e；CLI 默认研究正式版文档不代表本地 SDK 已升级。
+详细命令见 [CLI 使用说明](tools/huawei-cli/README.md)，官方版本及重新下载见 [官方发行物](official/README.md)。文中配套 SDK 为 26.0.0 Beta2 / 26.0.0.32，HDC 为 3.2.0e；CLI 默认研究正式版文档不代表所用 SDK 已升级。
+
+## 本机数据
+
+版本库只保存工具源码、共享 skill 和上游来源记录。官方发行物、依赖、构建产物、文档缓存和生成的阅读库由 `.gitignore` 排除。
+
+`huawei-dev auth` 的独立凭据保存在用户配置目录中并加密；自动签名复用 macOS Keychain 和用户目录下的 `.ohos/config` 材料。请勿将个人 token、私钥、证书或调试 Profile 加入版本库。华为官方 CLI 的认证状态由官方工具管理。
 
 ## 轻量包
 
-`scripts/package-lite.sh` 包含工具、skill 和 CLI 本地依赖，排除 `official/command-line-tools/` 与 Studio DMG。解压后按 `official/README.md` 补齐官方发行物，并运行安装器。
+`scripts/package-lite.sh` 包含工具、skill 和 CLI 本地依赖，排除官方大体积发行物、Git 历史、内部缓存和生成的阅读库。解压后按 `official/README.md` 补齐官方发行物，并运行安装器。
 
-官方 CLI 的 `create` 当前拒绝含空格的项目绝对路径；本目录含 `Lexar SSD`，创建工程需选定符合官方限制的实际路径。`check compat` 需要更高版本 Studio/CLT，项目当前 CLT 缺少 apicompat。其他命令按自身所需组件判断。
+官方 CLI 的 `create` 当前拒绝含空格的项目绝对路径，创建工程时应选择不含空格的实际路径。`check compat` 需要更高版本 Studio/CLT，本文配套 CLT 缺少 apicompat。其他命令按自身所需组件判断。
